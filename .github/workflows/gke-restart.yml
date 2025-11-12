@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to GKE
+    name: Deploy or Restart Pods in GKE
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -43,7 +43,7 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
-      # Step 4: Verify authentication
+      # Step 4: Verify authentication (optional but helpful for debugging)
       - name: Verify GCP authentication
         run: gcloud auth list
 
