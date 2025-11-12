@@ -1,28 +1,42 @@
-name: Restart GKE Pods
+name: GKE Deploy or Restart
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 jobs:
-  restart:
+  deploy:
+    name: Deploy to GKE
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/167189844279/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
 
-      - name: Configure kubectl
+      - name: Get GKE credentials
         run: |
-          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }} --project ${{ secrets.GCP_PROJECT_ID }}
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} \
+            --region ${{ secrets.GKE_LOCATION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Restart GKE Deployment
+      - name: Restart Pods in GKE
         run: |
           kubectl rollout restart deployment hello-nginx
           kubectl rollout status deployment hello-nginx
